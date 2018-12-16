@@ -31,8 +31,8 @@ class CreateItem extends Component {
   state = {
     title: "Cool Shoes",
     description: "these are great cat dog sheep",
-    image: "dog.jpeg",
-    largeImage: "large_dog.jpeg",
+    image: '',
+    largeImage: '',
     price: 23000
   };
 
@@ -42,25 +42,57 @@ class CreateItem extends Component {
     this.setState({ [name]: val });
   };
 
+  uploadFile = async e => {
+    const files = e.target.files;
+    const data = new FormData();
+    data.append('upload_preset', 'sickfits');
+    data.append('file', files[0]);
+    const res = await fetch("https://api.cloudinary.com/v1_1/elijahbit/image/upload",
+    {
+      method: 'POST',
+      body: data,
+    });
+    const file = await res.json();
+    if (file.error) {console.log(file.error); return}
+    this.setState({
+      image: file.secure_url,
+      largeImage: file.eager[0].secure_url,
+    })
+  };
+
   render() {
     return (
       <Mutation mutation={CREATE_ITEM_MUTATION} variables={this.state}>
         {(createItem, { loading, error }) => (
-          <Form onSubmit={async e => {
-            // stop the form from submitting
-            e.preventDefault();
-            // call the mutation
-            const res = await createItem();
-            // change them to the single item page
-            console.log({ res });
-            Router.push({
-              pathname: '/item',
-              query: {id: res.data.createItem.id}
-            });
-          }}>
+          <Form
+            onSubmit={async e => {
+              // stop the form from submitting
+              e.preventDefault();
+              // call the mutation
+              const res = await createItem();
+              // change them to the single item page
+              console.log({ res });
+              Router.push({
+                pathname: "/item",
+                query: { id: res.data.createItem.id }
+              });
+            }}
+          >
             <h2>Sell an Item</h2>
             <Error error={error} />>
             <fieldset disabled={loading} aria-busy={loading}>
+              <label htmlFor="file">
+                File
+                <input
+                  type="file"
+                  id="file"
+                  name="file"
+                  placeholder="Upload an Image"
+                  onChange={this.uploadFile}
+                />
+                {this.state.image && <img width="200" src={this.state.image} alt="Upload Preview" />}
+              </label>
+
               <label htmlFor="title">
                 Title
                 <input
